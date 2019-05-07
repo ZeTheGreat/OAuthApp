@@ -3,7 +3,18 @@ const GoogleStrategy = require('passport-google-oauth20');
 const mongoose = require('mongoose');
 const keys = require('../config/keys.js');
 
-const User = mongoose.model('users')
+const User = mongoose.model('users');
+
+passport.serializeUser((user, done) =>{
+    done(null, user.id); 
+});
+
+passport.deserializeUser((id, done) =>{
+    User.findById(id)
+        .then(user => {
+            done(null, user);
+        });
+});
 
 passport.use(new GoogleStrategy(
     {
@@ -16,9 +27,11 @@ passport.use(new GoogleStrategy(
             .then((existingUser)=>{
                 if(existingUser){
                     //We already have the user in DB
+                    done(null, existingUser);
                 } else{
                     //We don't have the user in DB
-                    new User ({ googleID: profile.id }).save();
+                    new User ({ googleID: profile.id }).save()
+                        .then(user => done(null, user));
                 }
             }) ;
     }  
