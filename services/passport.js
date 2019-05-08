@@ -1,40 +1,39 @@
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20');
-const mongoose = require('mongoose');
-const keys = require('../config/keys.js');
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20");
+const mongoose = require("mongoose");
+const keys = require("../config/keys.js");
 
-const User = mongoose.model('users');
+const User = mongoose.model("users");
 
-passport.serializeUser((user, done) =>{
-    done(null, user.id); 
+passport.serializeUser((user, done) => {
+  done(null, user.id);
 });
 
-passport.deserializeUser((id, done) =>{
-    User.findById(id)
-        .then(user => {
-            done(null, user);
-        });
+passport.deserializeUser((id, done) => {
+  User.findById(id).then(user => {
+    done(null, user);
+  });
 });
 
-passport.use(new GoogleStrategy(
+passport.use(
+  new GoogleStrategy(
     {
-        clientID: keys.googleClientID,
-        clientSecret: keys.googleClientSecret,
-        callbackURL: '/auth/google/callback',
-        proxy: true
+      clientID: keys.googleClientID,
+      clientSecret: keys.googleClientSecret,
+      callbackURL: "/auth/google/callback",
+      proxy: true
     },
-    (accessToken, refreshToken, profile, done) =>{
-        User.findOne({googleID: profile.id})
-            .then((existingUser)=>{
-                if(existingUser){
-                    //We already have the user in DB
-                    done(null, existingUser);
-                } else{
-                    //We don't have the user in DB
-                    new User ({ googleID: profile.id }).save()
-                        .then(user => done(null, user));
-                }
-            }) ;
-    }  
-    )
+    async (accessToken, refreshToken, profile, done) => {
+      const existingUser = await User.findOne({ googleID: profile.id });
+      
+      if (existingUser) {
+        //We already have the user in DB
+        done(null, existingUser);
+      } else {
+        //We don't have the user in DB
+        const user = await new User({ googleID: profile.id }).save();
+        done(null, user);
+      }
+    }
+  )
 );
